@@ -1,5 +1,5 @@
 import React from './core/React.js'
 
-const App = React.createElement('div', { id: 'app' }, 'hello ', 'world')
+const App = <div>hello-mini-react</div>
 
 export default App
