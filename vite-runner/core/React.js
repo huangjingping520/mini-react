@@ -58,7 +58,15 @@ function commitRoot() {
 
 function commitWork(fiber) {
   if (!fiber) return
-  fiber.parent.dom.append(fiber.dom)
+
+  let fiberParent = fiber.parent
+  while (!fiberParent.dom) {
+    fiberParent = fiberParent.parent
+  }
+
+  if (fiber.dom) {
+    fiberParent.dom.append(fiber.dom)
+  }
   commitWork(fiber.child)
   commitWork(fiber.sibling)
 }
@@ -78,8 +86,7 @@ function updateProps(dom, props) {
   })
 }
 
-function initChildren(fiber) {
-  const children = fiber.props.children
+function initChildren(fiber, children) {
   let prevChild = null
   children.forEach((child, index) => {
     const newFiber = {
@@ -100,19 +107,23 @@ function initChildren(fiber) {
 }
 
 function performWorkOfUnit(fiber) {
-  if (!fiber.dom) {
-    // 1. create dom  
-    const dom = (fiber.dom = createDom(fiber.type))
+  const isFunctionComponent = typeof fiber.type === 'function'
+  if (!isFunctionComponent) {
+    if (!fiber.dom) {
+      // 1. create dom  
+      const dom = (fiber.dom = createDom(fiber.type))
 
-    // fiber.parent.dom.append(dom)
+      // fiber.parent.dom.append(dom)
 
-    // 2. props
-    updateProps(dom, fiber.props)
+      // 2. props
+      updateProps(dom, fiber.props)
+    }
   }
 
+  const children = isFunctionComponent ? [fiber.type()] : fiber.props.children
 
   // 3. create linked list
-  initChildren(fiber)
+  initChildren(fiber, children)
 
   // 4. return next task
   if (fiber.child) {
