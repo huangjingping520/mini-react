@@ -27,21 +27,11 @@ function render(el, container) {
       children: [el]
     }
   }
-  // const dom = el.type === 'TEXT_ELEMENT' ? document.createTextNode('') : document.createElement(el.type)
 
-  // Object.keys(el.props).forEach((key) => {
-  //   if (key !== 'children') {
-  //     dom[key] = el.props[key]
-  //   }
-  // })
-
-  // const children = el.props.children
-  // children.forEach((child) => {
-  //   render(child, dom)
-  // })
-  
-  // container.append(dom)
+  root = nextWorkOfUnit
 }
+
+let root = null
 
 let nextWorkOfUnit = null
 
@@ -54,17 +44,33 @@ function workloop(deadline) {
     shouldYield = deadline.timeRemaining() < 1
   }
 
+  if (!nextWorkOfUnit && root) {
+    commitRoot()
+  }
+
   requestIdleCallback(workloop)
 }
 
+function commitRoot() {
+  commitWork(root.child)
+  root = null
+}
 
-function createDom (type) {
+function commitWork(fiber) {
+  if (!fiber) return
+  fiber.parent.dom.append(fiber.dom)
+  commitWork(fiber.child)
+  commitWork(fiber.sibling)
+}
+
+
+function createDom(type) {
   return type === 'TEXT_ELEMENT'
     ? document.createTextNode('')
     : document.createElement(type)
 }
 
-function updateProps (dom, props) {
+function updateProps(dom, props) {
   Object.keys(props).forEach((key) => {
     if (key !== 'children') {
       dom[key] = props[key]
@@ -72,7 +78,7 @@ function updateProps (dom, props) {
   })
 }
 
-function initChildren (fiber) {
+function initChildren(fiber) {
   const children = fiber.props.children
   let prevChild = null
   children.forEach((child, index) => {
@@ -93,13 +99,13 @@ function initChildren (fiber) {
   })
 }
 
-function performWorkOfUnit (fiber) {
+function performWorkOfUnit(fiber) {
   if (!fiber.dom) {
     // 1. create dom  
     const dom = (fiber.dom = createDom(fiber.type))
-  
-    fiber.parent.dom.append(dom)
-  
+
+    // fiber.parent.dom.append(dom)
+
     // 2. props
     updateProps(dom, fiber.props)
   }
@@ -107,7 +113,7 @@ function performWorkOfUnit (fiber) {
 
   // 3. create linked list
   initChildren(fiber)
-  
+
   // 4. return next task
   if (fiber.child) {
     return fiber.child
