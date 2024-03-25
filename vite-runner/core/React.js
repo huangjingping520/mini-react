@@ -14,7 +14,8 @@ const createElement = (type, props, ...children) => {
     props: {
       ...props,
       children: children.map((child) => {
-        return typeof child === 'string' ? createTextNode(child) : child
+        const isTextNode = typeof child === 'string' || typeof child === 'number'
+        return isTextNode ? createTextNode(child) : child
       })
     }
   }
@@ -120,7 +121,7 @@ function performWorkOfUnit(fiber) {
     }
   }
 
-  const children = isFunctionComponent ? [fiber.type()] : fiber.props.children
+  const children = isFunctionComponent ? [fiber.type(fiber.props)] : fiber.props.children
 
   // 3. create linked list
   initChildren(fiber, children)
@@ -130,11 +131,13 @@ function performWorkOfUnit(fiber) {
     return fiber.child
   }
 
-  if (fiber.sibling) {
-    return fiber.sibling
+  let nextFiber = fiber
+  while (nextFiber) {
+    if (nextFiber.sibling) {
+      return nextFiber.sibling
+    }
+    nextFiber = nextFiber.parent
   }
-
-  return fiber.parent?.sibling
 }
 
 requestIdleCallback(workloop)
