@@ -107,24 +107,31 @@ function initChildren(fiber, children) {
   })
 }
 
-function performWorkOfUnit(fiber) {
-  const isFunctionComponent = typeof fiber.type === 'function'
-  if (!isFunctionComponent) {
-    if (!fiber.dom) {
-      // 1. create dom  
-      const dom = (fiber.dom = createDom(fiber.type))
+function updateFunctionComponent(fiber) {
+  const children = [fiber.type(fiber.props)]
 
-      // fiber.parent.dom.append(dom)
+  initChildren(fiber, children)
+}
 
-      // 2. props
-      updateProps(dom, fiber.props)
-    }
+function updateHostComponent(fiber) {
+  if (!fiber.dom) {
+    const dom = (fiber.dom = createDom(fiber.type))
+
+    updateProps(dom, fiber.props)
   }
 
-  const children = isFunctionComponent ? [fiber.type(fiber.props)] : fiber.props.children
-
-  // 3. create linked list
+  const children = fiber.props.children
   initChildren(fiber, children)
+}
+
+function performWorkOfUnit(fiber) {
+  const isFunctionComponent = typeof fiber.type === 'function'
+
+  if (isFunctionComponent) {
+    updateFunctionComponent(fiber)
+  } else {
+    updateHostComponent(fiber)
+  }
 
   // 4. return next task
   if (fiber.child) {
